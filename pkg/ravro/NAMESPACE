@@ -1,0 +1,7 @@
+export(AVRO_TOOLS)
+export(avro_get_schema)
+export(read.avro)
+import(Rcpp)
+import(bit64)
+import(rjson)
+useDynLib(ravro)

@@ -1,0 +1,42 @@
+\name{avro_get_schema}
+\alias{avro_get_schema}
+\title{Get Avro Schema}
+\usage{
+avro_get_schema(file)
+}
+\arguments{
+  \item{file}{the path to an Avro data file}
+}
+\value{
+A list representation of the Avro JSON schema as parsed
+using \code{\link{fromJSON}}.
+}
+\description{
+Get the schema that was used to write an Avro data file
+}
+\details{
+Uses the \code{\link{AVRO_TOOLS}} jar file and the
+"getschema" command to retrieve the Avro schema for
+\code{file}.
+}
+\examples{
+# Built-in example Avro example file containing the mtcars dataset
+mtavro_path <- system.file("data/mtcars.avro",package="ravro")
+str(avro_get_schema(mtavro_path))
+# List of 3
+# $ type  : chr "record"
+# $ name  : chr "mtcars"
+# $ fields:List of 12
+# ..$ :List of 2
+# .. ..$ name: chr "mpg"
+# .. ..$ type: chr "double"
+# ..$ :List of 2
+# .. ..$ name: chr "cyl"
+# .. ..$ type: chr "double"
+## etc.
+}
+\references{
+Apache Avro 1.7.6 Specification.
+\url{http://avro.apache.org/docs/1.7.6/spec.html}.
+}
+
