@@ -1,3 +1,17 @@
+# Copyright 2014 Revolution Analytics
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.#!/bin/bash
+
 # does this avro type require a name
 # @param xtype character value
 avro_type_requires_name <- function(xtype){
@@ -31,7 +45,7 @@ avro_type_is_atomic <- function(xtype){
     }
   }else if (is.character(xtype)){
     xtype %in% c("boolean","int","long","float","double",
-                 "string","enum","fixed","bytes","null")  
+                 "string","enum","fixed","bytes","null")
   }else {
     FALSE
   }
@@ -65,7 +79,7 @@ avro_convert_atomic <- function(x,xtype){
 
 
 # Get the basic Avro type for an R value
-# 
+#
 avro_make_type <- function(x){
   if (is.atomic(x)){
     switch(class(x),
@@ -86,9 +100,9 @@ avro_make_type <- function(x){
         # (as opposed to data elements containing key-value pairs)
         warning("Non-null names attribute for list datum: ",paste(names(x),collapse=", "))
       }
-      
-      if (all(sapply(x,function(xi){!is.data.frame(xi) && 
-                                      !is.null(names(xi)) && 
+
+      if (all(sapply(x,function(xi){!is.data.frame(xi) &&
+                                      !is.null(names(xi)) &&
                                       all(!is.na(names(xi)))}))){
         # if the values are not data frames and they are list/vectors with names
         "map"
@@ -106,26 +120,26 @@ avro_make_type <- function(x){
 }
 
 ## Create Avro Schema
-## 
+##
 ## Create an Avro schema object for an R value
-## 
+##
 ## Create an Avro schema and convert an R \code{data.frame} value into a list of data elements.
-## 
-## Optional \code{name} and \code{namespace} arguments can be used to specify the top-level Avro 
+##
+## Optional \code{name} and \code{namespace} arguments can be used to specify the top-level Avro
 ## element \code{name} and \code{namespace}.
-## 
-## If \code{is.union = TRUE}, each data element will be wrapped in a \code{list} named with the 
+##
+## If \code{is.union = TRUE}, each data element will be wrapped in a \code{list} named with the
 ## Avro type for that data element, consistent with the Avro JSON encoding.
-## 
-## If \code{is.field = TRUE}, slight modifications will be made to the Avro schema and data 
+##
+## If \code{is.field = TRUE}, slight modifications will be made to the Avro schema and data
 ## elements, allowing them to be used as values/schemas for a Avro \code{record}'s "field" value.
-## 
-## 
+##
+##
 ## @param x data object for which to create an Avro schema
 ## @param name (optional)a "name" value for the top-level Avro schema element
 ## @param namespace (optional)a "namespace" value for the top-level Avro schema element
 ## @param row.names should the \code{row.names} attribute be exported as the field \code{row_names}.
-## 
+##
 ## @export
 avro_make_schema <- function(x,name=NULL,namespace=NULL,
                              unflatten=F,
@@ -144,7 +158,7 @@ avro_make_schema <- function(x,name=NULL,namespace=NULL,
 ## @param is.field should the value and schema be prepared as record fields
 ##
 ## @return
-## A list with "schema" and "data" fields containing the formatted data and schema 
+## A list with "schema" and "data" fields containing the formatted data and schema
 avro_make_data <- function(x,name=NULL,namespace=NULL,
                            is.union=F,
                            row.names=T,
@@ -153,15 +167,15 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
   schema <- list()
   xavro <- x
   xtype <- avro_make_type(x)
-  
+
   if (!is.null(name)){
     schema$name <- name
   }
-  
+
   if (avro_type_requires_name(xtype) && is.null(name)){
     stop("Avro type \"",xtype,"\" must be named.")
   }
-  
+
   if (xtype =="null"){
     schema$type=xtype
   }else if (avro_type_is_atomic(xtype)){
@@ -170,7 +184,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
       if (is.null(name)){
         stop("Avro type \"",xtype,"\" must be named.")
       }
-      
+
       # include the namespace if it's not null
       xname <- if (!is.null(namespace)){
         paste0(namespace,".",name)
@@ -180,7 +194,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
       xtype <- list(name=name,type="enum")
       xavro <- as.factor(xavro)
       xtype$symbols <- levels(x)
-    
+
       # Make sure user-defined values won't collide with ravro-generated symbols
       if (any(is_ravro_symbol(xtype$symbols))){
         stop("ravro uses the symbol namespace \"_*_ravro\" for auto-generated Avro symbol names")
@@ -189,8 +203,8 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
       if (any(invalid_names)){
         # update invalid symbol levels, so we can grab character values
         # This should be safer and faster than converting the values directly
-        xtype$symbols[invalid_names] <- 
-          levels(xavro)[invalid_names] <- 
+        xtype$symbols[invalid_names] <-
+          levels(xavro)[invalid_names] <-
           ravro_make_symbol(xtype$symbols[invalid_names])
         warning("Factor levels converted to valid Avro names: ",
              paste0(xtype$symbols[invalid_names],collapse=", "))
@@ -200,8 +214,8 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
     if (any(is.infinite(xavro))){
       stop("Infinite values cannot be serialied to Avro")
     }
-    
-    
+
+
     schema$type <- xtype
     if (any(is.na(xavro)) || is.union){
       schema$type <- c(list("null"),list(xtype))
@@ -212,7 +226,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
       xavro <- enlist(xavro,rep(xname,length(xavro)))
       xavro[x_na] <- list(NULL)
     }
-  }else  if (xtype == "record"){    
+  }else  if (xtype == "record"){
     if (row.names){
       x$row_names <- attr(x,"row.names")
     }
@@ -227,7 +241,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
     names(schema$fields) <- NULL # remove the names
     xavro <- t.list(lapply(xfields,`[[`,"data"))
     if (is.union){
-      # In order to support unions, we need to embed the type, so each row needs to be a 
+      # In order to support unions, we need to embed the type, so each row needs to be a
       # list containing a single value, with name equal to the record name
       xnames <- rep(
         if(is.null(namespace)){
@@ -236,7 +250,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
           paste0(namespace,".",name)
         },
         length(xavro))
-      
+
       xavro <- enlist(xavro,xnames)
     }else {
       names(xavro) <- NULL
@@ -289,10 +303,10 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
     })
     value_types <- unique(unlist(lapply(x_avro,`[[`,"schema"),recursive=F))
     xavro <- lapply(x_avro,`[[`,"data")
-    
+
     if (length(value_types)==1){
       value_types <- value_types[[1]]
-      # strip out the type names and 
+      # strip out the type names and
       # unlist one level
       xavro <- lapply(xavro,function(xi){
         xi <- unlist(xi,recursive=F)
@@ -303,7 +317,7 @@ avro_make_data <- function(x,name=NULL,namespace=NULL,
       value_types <- "null"
       warning("No values for Avro \"array\" type: ",name," using \"null\"")
     }
-    
+
     if (xtype=="map"){
       schema$values = value_types
     }else{
@@ -324,16 +338,16 @@ make_avro_name <- function(x){
 }
 
 ## Avro Data Output
-## 
+##
 ## Export R Value to Avro Data File
-## 
-## Optional \code{name} and \code{namespace} arguments can be used to specify the top-level Avro 
+##
+## Optional \code{name} and \code{namespace} arguments can be used to specify the top-level Avro
 ## element \code{name} and \code{namespace}.
-## 
+##
 ## If \code{unflatten=TRUE}, any columns with "." in the name will be combined into nested
-## Avro "record" schemas.  For example, the \code{\link{iris}} dataset would be stored as a 
+## Avro "record" schemas.  For example, the \code{\link{iris}} dataset would be stored as a
 ## top-level record containing "Sepal" and "Petal" \code{record} fields and a "Species"
-## \code{string} field.  The "Sepal" and "Petal" \code{record} types would each contain 
+## \code{string} field.  The "Sepal" and "Petal" \code{record} types would each contain
 ## "Length" and "Width" \code{double} fields.
 ##
 ## If \code{unflatten=FALSE}, any appearances of "." in the column names will be replaced with
@@ -345,10 +359,10 @@ make_avro_name <- function(x){
 ## @param namespace a character value indicating the Avro "namespace" for the top-level schema
 ## @param row.names whether or not the "row.names" attribute should be exported with the dataset
 ## @param codec a character value indicating the Avro codec to use
-## @param unflatten whether or not columns with "." in the their names should be "unflattened" 
-## 
+## @param unflatten whether or not columns with "." in the their names should be "unflattened"
+##
 ## @inheritParams avro_make_data
-## 
+##
 ## @export
 write.avro <- function(x,file,name="x",namespace=NULL,
                        row.names=T,
@@ -373,21 +387,21 @@ write.avro <- function(x,file,name="x",namespace=NULL,
   #  name
   #}
   name <- make_avro_name(name)
-  
-  
-  
+
+
+
   # get the schema
   x_avro_data <- avro_make_data(x,name=name,namespace=namespace,
                                 row.names=row.names,
                                 unflatten=unflatten)
   x_schema <- x_avro_data$schema
-  
+
   ## If the data is just a generic list, it
   x_schema$name <- name
   if (!is.null(namespace)){
     x_schema$namespace <- namespace
   }
-  
+
   # Convert to JSON and write the temp files
   x_json <- sapply(x_avro_data$data,toJSON)
   json_file <- tempfile(pattern=basename(file),
@@ -396,10 +410,10 @@ write.avro <- function(x,file,name="x",namespace=NULL,
   schema_file <- tempfile(pattern=basename(file),
                           fileext=".avsc")
   writeLines(toJSON(x_schema),schema_file)
-  
+
   # Call avro tools
   err <- {
-  	if(.Platform$OS.type == "windows") 
+  	if(.Platform$OS.type == "windows")
   		system2("java",c("-jar",AVRO_TOOLS,
   										 "fromjson",
   										 "--codec",codec,
@@ -413,8 +427,8 @@ write.avro <- function(x,file,name="x",namespace=NULL,
   								 "--codec",codec,
   								 "--schema-file",sanitize_path(schema_file),
   								 sanitize_path(json_file),
-  								 ">", file), 
-  					 intern = T)}  				 
+  								 ">", file),
+  					 intern = T)}
   if (length(err)>0){
     message(err)
     stop("Error creating Avro file")

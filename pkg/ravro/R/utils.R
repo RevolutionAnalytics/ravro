@@ -1,11 +1,25 @@
+# Copyright 2014 Revolution Analytics
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.#!/bin/bash
+
 ## List Transpose
-## 
+##
 ## Transpose a list of lists
-## 
+##
 ## @param l list
-## 
+##
 ## @examples
-## 
+##
 ## ravro:::t.list(mtcars)[[1]]
 #' @import Rcpp
 #' @useDynLib ravro
@@ -42,7 +56,7 @@ unflatten <- function(x){
 }
 
 # wrap each element of x as a single-element list,
-# using the corresponding element from names as the name for the single element 
+# using the corresponding element from names as the name for the single element
 enlist <- function(x,names){
   mapply(
     function(xi,name){

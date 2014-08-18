@@ -1,16 +1,30 @@
+# Copyright 2014 Revolution Analytics
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.#!/bin/bash
+
 
 #' Get Avro Schema
-#' 
+#'
 #' Get the schema that was used to write an Avro data file
-#' 
-#' Uses the \code{\link{AVRO_TOOLS}} jar file and the "getschema" command to retrieve the Avro 
+#'
+#' Uses the \code{\link{AVRO_TOOLS}} jar file and the "getschema" command to retrieve the Avro
 #' schema for \code{file}.
-#' 
-#' @param file the path to an Avro data file 
-#' 
+#'
+#' @param file the path to an Avro data file
+#'
 #' @return
 #' A list representation of the Avro JSON schema as parsed using \code{\link{fromJSON}}.
-#' 
+#'
 #' @examples
 #' # Built-in example Avro example file containing the mtcars dataset
 #' mtavro_path <- system.file("data/mtcars.avro",package="ravro")
@@ -26,7 +40,7 @@
 #' # .. ..$ name: chr "cyl"
 #' # .. ..$ type: chr "double"
 #' ## etc.
-#' 
+#'
 #' @export
 #' @references Apache Avro 1.7.6 Specification. \url{http://avro.apache.org/docs/1.7.6/spec.html}.
 avro_get_schema <- function(file){
@@ -41,30 +55,30 @@ avro_get_schema <- function(file){
 }
 
 ## Convert Avro to JSON
-## 
+##
 ## Convert an Avro Data File to a JSON file
-## 
-## Uses the \code{\link{AVRO_TOOLS}} jar file and the "tojson" command to convert the Avro 
+##
+## Uses the \code{\link{AVRO_TOOLS}} jar file and the "tojson" command to convert the Avro
 ## input file into the output file.
-## 
+##
 ## @param input the path to an Avro data file
 ## @param output the path to a JSON output file
-## 
+##
 ## @return
-## 
+##
 ## Returns \code{output} character value.
-## 
+##
 ## @examples
 ## mtavro_path <- system.file("data/mtcars.avro",package="ravro")
 ## readLines(avro_to_json(mtavro_path),n=1)
-## 
+##
 ## @export
 avro_to_json <- function(input,
                          output=tempfile(
                            pattern=basename(input),
                            fileext=".json")){
 	err <- {
-		if(.Platform$OS.type == "windows") 
+		if(.Platform$OS.type == "windows")
 			system2("java",c("-jar",AVRO_TOOLS,"tojson",sanitize_path(input)),stdout=output,
           stderr=T)
 		else
@@ -92,7 +106,7 @@ parse_avro.record <- function(x,schema,flatten=T,...){
   x <- fill.with.NAs.if.short(x, nc)
   x_df <- t.list(x)
   row_names <- .set_row_names(nr)
-  
+
   is_row_name <- names(x_df) == "row_names"
   if (any(is_row_name)){
     row_names <- parse_avro(x_df$row_names,schema$fields[[which(is_row_name)]])
@@ -110,7 +124,7 @@ parse_avro.record <- function(x,schema,flatten=T,...){
                        # If it's a dataframe/Avro "record"
                        # "flatten" it
                        lst <- if (is.data.frame(parsed_field)){
-                         names(parsed_field) <- 
+                         names(parsed_field) <-
                            paste0(schema$fields[[field]]$name,".",names(parsed_field))
                          # Return it as a list, otherwise it's created
                          # as a single column containing a dataframe,
@@ -140,7 +154,7 @@ parse_avro.record <- function(x,schema,flatten=T,...){
 
 parse_avro.array <- function(x,schema,simplify=F,encoded_unions=T,...){
   schema_data <- parse_avro_schema(schema$items)
-  if (schema_data$is_union && encoded_unions){ 
+  if (schema_data$is_union && encoded_unions){
     x <- lapply(x,function(xi){
         xi <- unlist(xi,recursive=F)
         names(xi)=NULL
@@ -196,20 +210,20 @@ parse_avro_schema <- function(schema){
 
 
 ## Convert Avro JSON to R
-## 
+##
 ## Convert a parsed JSON dataset into R using the specified Avro schema.
-## 
-## Convert imported Avro data into useful R objects using the Avro schema.  Both the data, 
+##
+## Convert imported Avro data into useful R objects using the Avro schema.  Both the data,
 ## \code{x}, and the schema, \code{schema}, are assumed to have been parsed from \code{JSON}
 ## using \code{fromJSON}.
-## 
-## 
+##
+##
 ## @param x a list of Avro datum values as parsed JSON
 ## @param schema the Avro schema for this value parsed from JSON into R
-## @param encoded_unions are unions encoded with their fully qualified type according to the 
+## @param encoded_unions are unions encoded with their fully qualified type according to the
 ## Avro JSON encoding specification or are unions simply encoded as their contents?
-## 
-## 
+##
+##
 ## @inheritParams read.avro
 ## @seealso \code{\link{fromJSON}}, \code{\link{integer64}}
 ## @references Apache Avro 1.7.6 Specification. \url{http://avro.apache.org/docs/1.7.6/spec.html}.
@@ -218,7 +232,7 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
   schema_data <- parse_avro_schema(schema)
   schema <- schema_data$schema
   xtype <- schema_data$type
-  
+
   # Deal with null for all data here, whether or not they're supposed to exist
   default = if(is.null(schema$default)) NA else schema$default
   x <- default.if.null(x, default)
@@ -231,7 +245,7 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
     stop("Invalid type: ",paste0(xtype,collapse=", "))
   }
   switch(xtype,
-         record=parse_avro.record(x,schema,flatten=flatten,simplify=simplify, 
+         record=parse_avro.record(x,schema,flatten=flatten,simplify=simplify,
                                   encoded_unions = encoded_unions),
          array=parse_avro.array(x,schema,flatten=flatten,simplify=simplify,
                                 encoded_unions=encoded_unions),
@@ -247,50 +261,50 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
                               encoded_unions=encoded_unions),
          map=x,
          stop("Unsupported Avro type: ",xtype))
-  
+
 }
 
 #' Avro Data Input
-#' 
+#'
 #' Reads a file in the Avro format and creates an appropriate R data value from it corresponding to the Avro schema used to create the file.
-#' 
+#'
 #' Reads an Avro data file into R in a four-step process:
 #' \enumerate{
 #' \item Retrieve the Avro schema used to write the Avro data file
 #' \item Convert the Avro data to a \code{JSON} file using the Java Avro Tools
 #' \item Read the \code{JSON} data into R and parse it using \code{\link{fromJSON}}
-#' \item Using the schema, complete any additional transformations of the data to 
+#' \item Using the schema, complete any additional transformations of the data to
 #' compatible and useful R objects}
-#' 
+#'
 #' Steps 3 and 4 are repeated, processing \code{buffer.length} Avro datum elements at a time
 #' until either \code{n} records have been processed or the end of the file is reached.
-#' 
+#'
 #' The specific Avro Tools jar file is defined by \code{\link{AVRO_TOOLS}}
-#' 
-#' 
-#' 
-#' 
+#'
+#'
+#'
+#'
 #' @param file path to an Avro data file
 #' @param n the maximum number of Avro datums to read
 #' @param buffer.length the (maximum) number of records to import at a time for conversion to
 #' R objects
 #' @param flatten combine all logical "record" fields into a single top-level dataframe
-#' @param simplify logical or character string; should the result be simplified to a vector, 
-#' matrix or higher dimensional array if possible? The default value, TRUE, returns a vector 
+#' @param simplify logical or character string; should the result be simplified to a vector,
+#' matrix or higher dimensional array if possible? The default value, TRUE, returns a vector
 #' or matrix if appropriate. For more details, see \code{\link{sapply}}.
-#' 
-#' 
+#'
+#'
 #' @return
-#' 
+#'
 #' Avro types will be converted to R object with the following mapping:
-#' 
+#'
 #' \itemize{
 #' \item \code{null} -> R's \code{NA} value
 #' \item \code{boolean} -> \code{logical}
 #' \item \code{int}` -> \code{integer}
 #' \item \code{long} -> \code{integer64} (from the `bit64` package)
 #' \item \code{float},\code{double} -> \code{numeric}
-#' \item \code{bytes},\code{fixed} -> \code{character} (\code{charToRaw} allows conversion to vector of type \code{raw}) 
+#' \item \code{bytes},\code{fixed} -> \code{character} (\code{charToRaw} allows conversion to vector of type \code{raw})
 #' \item \code{string} -> \code{character}
 #' \item \code{record} -> \code{data.frame} (see below)
 #' \item \code{enum} -> \code{factor}
@@ -298,41 +312,41 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
 #' \item \code{map} ->  named \code{list}
 #' \item \code{union} -> \code{list} or \code{vector}
 #' }
-#' 
-#' In addition to this type mapping, the specific data structure is determined by 
-#' the options \code{flatten} and \code{simplify}.  The \code{simplify} option causes 
+#'
+#' In addition to this type mapping, the specific data structure is determined by
+#' the options \code{flatten} and \code{simplify}.  The \code{simplify} option causes
 #' \code{array} elements to be simplified in the same way that \code{\link{sapply}} results
 #' are.
-#' 
-#' The \code{flatten} option causes nested \code{record} elements to be "lifted" up to the 
-#' top-level dataframe value.  For example, the \code{\link{iris}} dataset could be stored as a 
+#'
+#' The \code{flatten} option causes nested \code{record} elements to be "lifted" up to the
+#' top-level dataframe value.  For example, the \code{\link{iris}} dataset could be stored as a
 #' top-level "iris" record containing "Sepal" and "Petal" \code{record} fields and a "Species"
 #' \code{string} field.  When \code{flatten=TRUE}, this Avro dataset would be imported with the
 #' same structure as the \code{\link{iris}} dataset.  Alternatively, \code{flatten=FALSE} would
 #' import the same Avro dataset as a dataframe containing three columns, "Sepal" and "Petal" columns
-#' that are themselves dataframes, and a "Species" column containing \code{character} values.  
+#' that are themselves dataframes, and a "Species" column containing \code{character} values.
 #' This serialization of the \code{\link{iris}} dataset is stored as \code{data/iris.avro}.
-#' 
+#'
 #' For Avro \code{record} types, the \code{row.names} attribute is retrieved from the "row_names"
 #' field, if such a field exists.
-#' 
+#'
 #' @examples
 #' # Built-in example Avro example file containing the mtcars dataset
 #' mtavro_path <- system.file("data/mtcars.avro",package="ravro")
-#' 
+#'
 #' # Read in the data
 #' mtavro <- read.avro(mtavro_path)
 #' names(mtavro)
 #' # [1] "mpg"  "cyl"  "disp" "hp"   "drat" "wt"   "qsec" "vs"   "am"   "gear" "carb"
 #' all.equal(mtcars,mtavro)
 #' # [1] TRUE
-#' 
+#'
 #' # Inspect the Avro schema
 #' str(avro_get_schema(mtavro_path))
-#' 
+#'
 #' # Built-in example Avro example file containing the iris dataset
 #' iris_avro_path <- system.file("data/iris.avro",package="ravro")
-#' 
+#'
 #' # Importing flattened data
 #' str(read.avro(iris_avro_path))
 #' #'data.frame':  150 obs. of  5 variables:
@@ -341,7 +355,7 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
 #' #  $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #' #  $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #' #  $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
-#'  
+#'
 #' # Importing unflattened data
 #' str(read.avro(iris_avro_path,flatten=FALSE))
 #' #'data.frame':  150 obs. of  3 variables:
@@ -352,7 +366,7 @@ parse_avro <- function(x,schema,flatten=T,simplify=F,encoded_unions=T){
 #' #   ..$ Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #' # ..$ Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #' # $ Species: Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
-#' 
+#'
 #' @export
 #' @import rjson
 #' @seealso \code{\link{integer64}}, \code{\link{AVRO_TOOLS}}
@@ -382,7 +396,7 @@ read.avro <- function(file,n=-1L,flatten=T,simplify=F,buffer.length=10000){
     buffer_x <- parse_avro(
       fromJSON(paste0("[",paste0(buffer,collapse=","),"]")),
       schema=schema,flatten=T,simplify=simplify)
-    
+
     if (is.null(x)){
       x <- buffer_x
     }else {
